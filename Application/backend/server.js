@@ -16,6 +16,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// import models
+const User = require('./models/User');
+const Book = require('./models/Book');
+const Loan = require('./models/Loan');
+const Inventory = require('./models/Inventory');
+
+// define database relationships
+
+// user and loan relationships
+User.hasMany(Loan, { foreignKey: 'user_id' });
+Loan.belongsTo(User, { foreignKey: 'user_id' });
+
+// book and loan relationships
+Book.hasMany(Loan, { foreignKey: 'book_id' });
+Loan.belongsTo(Book, { foreignKey: 'book_id' });
+
+// book and inventory relationships
+Book.hasOne(Inventory, { foreignKey: 'book_id' });
+Inventory.belongsTo(Book, { foreignKey: 'book_id' });
+
 // database connection and model sync
 sequelize.authenticate()
     .then(() => {

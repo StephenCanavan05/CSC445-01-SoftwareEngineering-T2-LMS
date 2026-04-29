@@ -1,8 +1,10 @@
+// import express router
 const express = require('express');
 const router = express.Router();
+// import models and auth
 const Loan = require('../models/Loan');
 const Book = require('../models/Book');
-const Inventory = require('../models/Inventory'); // New import
+const Inventory = require('../models/Inventory');
 const auth = require('../middleware/auth');
 
 // get loans for logged in user
@@ -11,74 +13,80 @@ router.get('/my-loans', auth, async (req, res) => {
         // find loans matching user id
         const loans = await Loan.findAll({
             where: { user_id: req.user.id },
-            // join book data to loan record
+            // join book data to loan
             include: [{
                 model: Book,
                 attributes: ['title', 'author']
             }]
         });
-
-        // send loan history to client
+        // send loan history
         res.json(loans);
     } catch (error) {
-        // log the error for debugging
+        // log error for debugging
         console.error('error fetching user loans:', error);
-        // send server error response
+        // send server error
         res.status(500).json({ message: 'server error' });
     }
 });
 
-// create a new loan (Checking out a book)
+// checkout a book
 router.post('/', auth, async (req, res) => {
     try {
+        // get book id from request
         const { book_id } = req.body;
         const user_id = req.user.id; 
 
-        // check physical inventory instead of the book table
+        // check physical inventory availability
         const inventoryItem = await Inventory.findOne({ where: { book_id } });
 
+        // block if out of stock
         if (!inventoryItem || inventoryItem.quantity <= 0) {
-            return res.status(400).json({ message: 'No physical copies available in inventory' });
+            return res.status(400).json({ message: 'no physical copies available' });
         }
 
-        // create the loan record
+        // create new loan record
         const newLoan = await Loan.create({
             book_id,
             user_id,
             borrow_date: new Date(),
-            due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            status: 'active'
+            // set due date 14 days out
+            due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
         });
 
-        // decrement by 1
+        // decrement inventory by one
         await inventoryItem.decrement('quantity', { by: 1 });
 
-        res.status(201).json({ message: 'Checkout successful', loan: newLoan });
+        // send success response
+        res.status(201).json({ message: 'checkout successful', loan: newLoan });
     } catch (error) {
-        console.error('Checkout error:', error);
-        res.status(500).json({ message: 'Server error' });
+        // log error for debugging
+        console.error('checkout error:', error);
+        // send server error
+        res.status(500).json({ message: 'server error' });
     }
 });
 
-// update a loan (Returning a book)
-router.put('/:id', auth, async (req, res) => {
+// return a book
+router.put('/:id/return', auth, async (req, res) => {
     try {
+        // find loan by id
         const loan = await Loan.findByPk(req.params.id);
-        if (!loan) return res.status(404).json({ message: 'Loan not found' });
+        if (!loan) return res.status(404).json({ message: 'loan not found' });
+        // block if already returned
+        if (loan.return_date) return res.status(400).json({ message: 'book already returned' });
 
-        if (req.body.status === 'returned' && loan.status !== 'returned') {
-            // Find inventory increment by 1
-            const inventoryItem = await Inventory.findOne({ where: { book_id: loan.book_id } });
-            if (inventoryItem) {
-                await inventoryItem.increment('quantity', { by: 1 });
-            }
-            req.body.return_date = new Date();
+        // find inventory
+        const inventoryItem = await Inventory.findOne({ where: { book_id: loan.book_id } });
+        if (inventoryItem) {
+            // add book back to stock
+            await inventoryItem.increment('quantity', { by: 1 });
         }
 
-        await loan.update(req.body);
-        res.json({ message: 'Book returned successfully' });
+        // set return date
+        await loan.update({ return_date: new Date() });
+        res.json({ message: 'book returned successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'server error' });
     }
 });
 

@@ -1,31 +1,49 @@
-const jwt = require('jsonwebtoken');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const bcrypt = require('bcrypt');
 
-const auth = (req, res, next) => {
-    const authHeader = req.header('Authorization');
-    
-    if (!authHeader) {
-        return res.status(401).json({ message: 'No token, authorization denied' });
+// user model
+const User = sequelize.define('User', {
+    user_id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    name: {
+        type: DataTypes.STRING(100),
+        allowNull: false
+    },
+    email: {
+        type: DataTypes.STRING(150),
+        allowNull: false,
+        unique: true
+    },
+    password: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+    },
+    role: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: 'patron'
+    },
+    account_status: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: 'active'
     }
-
-    // ensure the header follows the format
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-        return res.status(401).json({ message: 'Token format must be "Bearer <token>"' });
+}, {
+    tableName: 'users',
+    timestamps: false,
+    hooks: {
+        // hash password before saving user
+        beforeCreate: async (user) => {
+            if (user.password) {
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(user.password, salt);
+            }
+        }
     }
+});
 
-    const token = parts[1];
-
-    try {
-        // use the same fallback key for
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_dev_key');
-        
-        // attach user info
-        req.user = decoded;
-        
-        next();
-    } catch (error) {
-        res.status(401).json({ message: 'Token is not valid' });
-    }
-};
-
-module.exports = auth;
+module.exports = User;
