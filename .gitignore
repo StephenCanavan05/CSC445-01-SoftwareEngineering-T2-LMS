@@ -1,15 +1,8 @@
-# OS generated files
 .DS_Store
 **/.DS_Store
-
-# Node modules
 node_modules/
 **/node_modules/
-
-# Environment variables
 .env
 **/.env
-
-# Ignore database files you pulled locally
 Application/database/schema.sql
 Application/database/seed.sql
