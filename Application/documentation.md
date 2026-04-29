@@ -1,6 +1,65 @@
-# Library Management System backend
+# LMS Backend
 
 Backend: Jorge Bautista
+
+## Installation & Setup
+Follow these steps to get the server running on your local machine.
+
+### 1. Prerequisites
+- **Node.js**
+- **PostgreSQL**
+
+### 2. Environment Configuration
+To Install Dependencies, navigate into the `Application/backend` folder and install the required modules:
+```env
+npm install
+```
+this may take a little.
+
+Create a `.env` file in the `backend` folder. Use the following template:
+```env
+PORT=8000
+DB_NAME=lms_db
+DB_USER=postgres
+DB_PASSWORD=YOUR_LOCAL_DB_PASSWORD!
+JWT_SECRET=dev_secret_key
+```
+There is also an .env.example file with this same information which you can edit.
+
+
+### 3. Database Setup
+
+The backend uses a PostgreSQL database. Follow these steps or rever to Jack's README to prepare your environment:
+
+Create a database named lms_db in pgAdmin or psql.
+
+Run the schema script: psql -d lms_db -f ../database/schema.sql
+
+Run the seed script: psql -d lms_db -f ../database/seed.sql
+
+### 4. Running the Server
+
+To start the server with auto-reload (development mode):
+
+```env
+npm run dev
+```
+
+The server will be available at http://localhost:8000.
+
+If successful, your terminal should display:
+
+Database connection established.
+Database models synchronized.
+Server is running on port 8000
+
+You can also run this in your browser as a health check:
+
+GET http://localhost:8000/api/health
+
+###################################
+
+# Library Management System API
 
 
 ## Base URL
