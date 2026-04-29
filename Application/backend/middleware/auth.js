@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 
 const auth = (req, res, next) => {
-    // Get the token from the header
     const authHeader = req.header('Authorization');
     
     if (!authHeader) {
@@ -17,8 +16,6 @@ const auth = (req, res, next) => {
         
         // attach the user data to the request object so routes can use it
         req.user = decoded;
-        
-        // move on to route logic
         next();
     } catch (error) {
         res.status(401).json({ message: 'token is not valid' });
