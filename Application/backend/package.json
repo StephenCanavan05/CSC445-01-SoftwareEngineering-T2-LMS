@@ -1,0 +1,15 @@
+{
+  "name": "csc445-01-softwareengineering-t2-lms",
+  "version": "1.0.0",
+  "description": "IEEE Standard Library Management System created for CSC455-01 Software Engineering at Eastern Connecticut State University!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
