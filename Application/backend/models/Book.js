@@ -8,23 +8,24 @@ const Book = sequelize.define('Book', {
         autoIncrement: true
     },
     title: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(255),
         allowNull: false
     },
     author: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(150),
         allowNull: false
     },
     isbn: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(20),
         allowNull: false,
         unique: true
     },
     category: {
-        type: DataTypes.STRING
+        type: DataTypes.STRING(100)
     },
     availability: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
         defaultValue: true
     }
 }, {

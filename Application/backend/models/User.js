@@ -1,41 +1,31 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-// user model based off sql schema
-const User = sequelize.define('User', {
-    user_id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    username: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    password_hash: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    role: {
-        type: DataTypes.STRING,
-        defaultValue: 'student'
+const auth = (req, res, next) => {
+    const authHeader = req.header('Authorization');
+    
+    if (!authHeader) {
+        return res.status(401).json({ message: 'No token, authorization denied' });
     }
-}, {
-    tableName: 'users',
-    timestamps: false,
-    hooks: {
-        beforeCreate: async (user) => {
-            const salt = await bcrypt.genSalt(10);
-            user.password_hash = await bcrypt.hash(user.password_hash, salt);
-        }
-    }
-});
 
-module.exports = User;
+    // ensure the header follows the format
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json({ message: 'Token format must be "Bearer <token>"' });
+    }
+
+    const token = parts[1];
+
+    try {
+        // use the same fallback key for
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_dev_key');
+        
+        // attach user info
+        req.user = decoded;
+        
+        next();
+    } catch (error) {
+        res.status(401).json({ message: 'Token is not valid' });
+    }
+};
+
+module.exports = auth;

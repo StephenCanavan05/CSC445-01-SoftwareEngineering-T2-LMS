@@ -1,55 +1,50 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // register a new user
 router.post('/register', async (req, res) => {
     try {
-        const { username, email, password, role } = req.body;
-
-        // the hook in the User model handles the hashing
+        // grab data from request
+        const { name, email, password, role } = req.body; 
+        // create new user record
         const newUser = await User.create({
-            username,
+            name,
             email,
-            password_hash: password, 
-            role
+            password, 
+            // assign role or default
+            role: role || 'patron'
         });
-
-        res.status(201).json({ message: 'user created successfully' });
+        res.status(201).json({ message: 'user registered' });
     } catch (error) {
-        res.status(500).json({ message: 'error during registration' });
+        res.status(500).json({ message: 'registration failed' });
     }
 });
 
-// login route
+// login an existing user
 router.post('/login', async (req, res) => {
     try {
+        // grab credentials from request
         const { email, password } = req.body;
-
-        // 1. find the user
         const user = await User.findOne({ where: { email } });
-        if (!user) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            // send invalid credentials
             return res.status(400).json({ message: 'invalid credentials' });
         }
 
-        // 2. compare the password with the hash
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'invalid credentials' });
-        }
-
-        // 3. create a token 
+        // sign the token
         const token = jwt.sign(
             { id: user.user_id, role: user.role },
-            process.env.JWT_SECRET || 'supersecretkey',
+            process.env.JWT_SECRET || 'secret_dev_key',
             { expiresIn: '1h' }
         );
 
-        res.json({ token, user: { username: user.username, role: user.role } });
+        // return token and user data
+        res.json({ token, user: { name: user.name, role: user.role } });
     } catch (error) {
-        res.status(500).json({ message: 'server error during login' });
+        res.status(500).json({ message: 'login error' });
     }
 });
 

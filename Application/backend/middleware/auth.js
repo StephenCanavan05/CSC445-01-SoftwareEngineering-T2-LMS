@@ -13,7 +13,7 @@ const auth = (req, res, next) => {
 
     try {
         // verify the token using secret key, will use a fallback placeholder key otherwise
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_key');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_dev_key');
         
         // attach the user data to the request object so routes can use it
         req.user = decoded;
