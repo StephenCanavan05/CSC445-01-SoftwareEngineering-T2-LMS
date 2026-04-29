@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// define what a book looks like based on jack's sql schema
 const Book = sequelize.define('Book', {
     book_id: {
         type: DataTypes.INTEGER,
@@ -30,7 +29,7 @@ const Book = sequelize.define('Book', {
     }
 }, {
     tableName: 'books',
-    timestamps: false   // no created_at/updated_at columns
+    timestamps: false
 });
 
 module.exports = Book;

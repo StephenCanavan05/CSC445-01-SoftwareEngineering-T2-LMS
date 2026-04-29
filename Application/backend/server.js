@@ -78,9 +78,10 @@ app.get('/api/health', (req, res) => {
 
 // placeholder controller routes
 // app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/books', require('./routes/bookRoutes'));
 // app.use('/api/circulation', require('./routes/circulationRoutes'));
+app.use('/api/loans', require('./routes/loanRoutes'));
 
 // start the server
 const PORT = process.env.PORT || 8000;
