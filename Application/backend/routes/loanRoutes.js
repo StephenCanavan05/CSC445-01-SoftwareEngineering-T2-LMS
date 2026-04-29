@@ -1,94 +1,110 @@
 const express = require('express');
 const router = express.Router();
 const Loan = require('../models/Loan');
+const Book = require('../models/Book');
+const auth = require('../middleware/auth');
 
-// get a list of all current loans
-router.get('/', async (req, res) => {
+// get all active loans for the logged-in user
+router.get('/my-loans', auth, async (req, res) => {
     try {
-        const loans = await Loan.findAll();
+        const loans = await Loan.findAll({
+            where: { user_id: req.user.id },
+            include: [{ model: Book, attributes: ['title', 'author'] }]
+        });
         res.json(loans);
     } catch (error) {
-        console.error('error fetching loans:', error);
-        res.status(500).json({ message: 'server error' });
+        console.error('Error fetching user loans:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
-// get details for a specific loan record
-router.get('/:id', async (req, res) => {
+// get a list of all loans (Admin/Staff view)
+router.get('/', auth, async (req, res) => {
     try {
-        const loan = await Loan.findByPk(req.params.id);
-        
-        if (!loan) {
-            return res.status(404).json({ message: 'loan record not found' });
-        }
-        
-        res.json(loan);
+        const loans = await Loan.findAll({ include: [Book] });
+        res.json(loans);
     } catch (error) {
-        console.error('error fetching loan details:', error);
-        res.status(500).json({ message: 'server error' });
+        console.error('Error fetching all loans:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
-// create a new loan (checking out a book)
-router.post('/', async (req, res) => {
+// create a new loan (Checking out a book)
+router.post('/', auth, async (req, res) => {
     try {
-        const { book_id, user_id, loan_date } = req.body;
+        const { book_id } = req.body;
+        const user_id = req.user.id; 
 
-        // make sure we have a book id and user id
-        if (!book_id || !user_id) {
-            return res.status(400).json({ message: 'book_id and user_id are required' });
+        // Find the book to check availability
+        const book = await Book.findByPk(book_id);
+
+        if (!book) {
+            return res.status(404).json({ message: 'Book not found' });
         }
 
+        if (book.available_copies <= 0) {
+            return res.status(400).json({ message: 'No copies available for checkout' });
+        }
+
+        // Create the loan record
         const newLoan = await Loan.create({
             book_id,
             user_id,
-            loan_date: loan_date || new Date(),
+            loan_date: new Date(),
+            due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14-day default
             status: 'active'
         });
 
-        res.status(201).json(newLoan);
+        // Decrement the book inventory
+        await book.decrement('available_copies', { by: 1 });
+
+        res.status(201).json({ message: 'Book checked out successfully', loan: newLoan });
     } catch (error) {
-        console.error('error creating loan:', error);
-        res.status(500).json({ message: 'server error' });
+        console.error('Error creating loan:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
-// update a loan (useful for marking a book as 'returned')
-router.put('/:id', async (req, res) => {
+// update a loan (Returning a book)
+router.put('/:id', auth, async (req, res) => {
     try {
         const loan = await Loan.findByPk(req.params.id);
 
         if (!loan) {
-            return res.status(404).json({ message: 'loan record not found' });
+            return res.status(404).json({ message: 'Loan record not found' });
         }
 
-        // if the status is being changed to returned, we could set the return_date here
-        if (req.body.status === 'returned' && !req.body.return_date) {
+        // Only update inventory if status is changing to 'returned' for the first time
+        if (req.body.status === 'returned' && loan.status !== 'returned') {
+            const book = await Book.findByPk(loan.book_id);
+            if (book) {
+                await book.increment('available_copies', { by: 1 });
+            }
             req.body.return_date = new Date();
         }
 
         await loan.update(req.body);
-        res.json(loan);
+        res.json({ message: 'Loan updated successfully', loan });
     } catch (error) {
-        console.error('error updating loan:', error);
-        res.status(500).json({ message: 'server error' });
+        console.error('Error updating loan:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
 // delete a loan record
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const loan = await Loan.findByPk(req.params.id);
 
         if (!loan) {
-            return res.status(404).json({ message: 'loan record not found' });
+            return res.status(404).json({ message: 'Loan record not found' });
         }
 
         await loan.destroy();
-        res.json({ message: 'loan record deleted successfully' });
+        res.json({ message: 'Loan record deleted successfully' });
     } catch (error) {
-        console.error('error deleting loan:', error);
-        res.status(500).json({ message: 'server error' });
+        console.error('Error deleting loan:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
