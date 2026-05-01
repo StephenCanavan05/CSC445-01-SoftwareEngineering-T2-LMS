@@ -1,0 +1,8 @@
+.DS_Store
+**/.DS_Store
+node_modules/
+**/node_modules/
+.env
+**/.env
+Application/database/schema.sql
+Application/database/seed.sql
