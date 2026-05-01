@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="card bg-white p-5 shadow-lg border-0" style="max-width: 400px; border-radius: 15px; width: 100%;">
+        <h2 class="text-center mb-4 text-primary fw-bold">Member Login</h2>
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="alert alert-danger py-2 small text-center border-0">
+                Invalid username or password.
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter username" required autofocus>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">Login</button>
+        </form>
+
+        <div class="text-center mt-2">
+            <small class="text-muted">New here? <a href="{% url 'registration' %}"
+                    class="text-decoration-none fw-bold">Create an account</a></small>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1>Library Catalog</h1>
+        <p class="text-muted">Search local books and global records.</p>
+    </div>
+
+    <div class="card shadow-sm p-4 mb-5 border-0">
+        <form method="GET" action="{% url 'browse_books' %}">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control form-control-lg"
+                    placeholder="Enter title, author, or ISBN..." value="{{ query }}">
+                <button type="submit" class="btn btn-primary px-5">Search</button>
+            </div>
+        </form>
+    </div>
+
+    {% if api_books %}
+    <h3 class="mb-4">Global Library Results</h3>
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        {% for api_book in api_books %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0">
+                {% if api_book.thumbnail %}
+                <img src="{{ api_book.thumbnail }}" class="card-img-top mx-auto mt-3 shadow-sm"
+                    style="width: 100px; height: 150px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h6 class="card-title fw-bold">{{ api_book.title }}</h6>
+                    <p class="small text-muted mb-2">By {{ api_book.authors|join:", " }}</p>
+                    <p class="card-text x-small text-secondary">{{ api_book.description|truncatewords:12 }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <hr>
+    {% endif %}
+
+    <h3 class="mb-4">Our Local Collection</h3>
+    <div class="row">
+        {% for book in books %}
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="text-primary">{{ book.title }}</h5>
+                    <p class="text-muted mb-0">{{ book.author }}</p>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-muted py-5">No local matches found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
