@@ -48,7 +48,7 @@ def fetch_external_books(query):
     if not query:
         return []
 
-    api_key = "AIzaSyAQEddqMFpkiKkpKRyAgkrv9SaqG6vcBoY"
+    api_key = "PLACEHOLDER"
     search_param = f"isbn:{query}" if (
         query.isdigit() and len(query) >= 10) else query
     external_books = []
