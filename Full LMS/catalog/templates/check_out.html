@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-0 shadow-sm p-4 mb-5 bg-light">
+        <h4 class="mb-3 text-primary"><i class="bi bi-search me-2"></i>Find Book to Issue Loan</h4>
+        <form method="GET" action="{% url 'check_out_tab' %}" class="d-flex mb-4">
+            <input type="text" name="book_q" class="form-control form-control-lg me-2"
+                placeholder="Search local inventory or global catalog..." value="{{ request.GET.book_q }}">
+            <button type="submit" class="btn btn-primary px-4">Search</button>
+        </form>
+
+        {% if local_books %}
+        <h5 class="text-muted mb-3 border-bottom pb-2">Local Results (Direct Issue)</h5>
+        <div class="row g-3 mb-5">
+            {% for book in local_books %}
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-primary">
+                    <div class="card-body">
+                        <h6 class="fw-bold">{{ book.title }}</h6>
+                        <p class="small text-muted mb-3">Author: {{ book.author }}</p>
+                        <form method="POST" action="{% url 'checkout_book' book.id %}">
+                            {% csrf_token %}
+                            <select name="patron_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">-- Select Patron --</option>
+                                {% for patron in all_patrons %}<option value="{{ patron.id }}">{{ patron.username }}
+                                </option>{% endfor %}
+                            </select>
+                            <input type="date" name="due_date" class="form-control form-control-sm mb-2" required>
+                            <button type="submit" class="btn btn-sm btn-success w-100">Confirm Loan</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if api_books %}
+        <h5 class="text-muted mb-3 border-bottom pb-2">Global Results (Import to Library)</h5>
+        <div class="row g-2">
+            {% for api_book in api_books %}
+            <div class="col-md-3">
+                <div class="card p-2 border-0 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        {% if api_book.thumbnail %}<img src="{{ api_book.thumbnail }}"
+                            style="width: 40px; height: 55px; object-fit: cover;" class="me-2 rounded">{% endif %}
+                        <div class="overflow-hidden">
+                            <p class="mb-0 small fw-bold text-truncate">{{ api_book.title }}</p>
+                            <form method="POST" action="{% url 'add_to_inventory' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="isbn" value="{{ api_book.isbn }}">
+                                <input type="hidden" name="title" value="{{ api_book.title }}">
+                                <input type="hidden" name="author" value="{{ api_book.authors }}">
+                                <button type="submit"
+                                    class="btn btn-link btn-sm p-0 text-success text-decoration-none">Import &
+                                    Stock</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

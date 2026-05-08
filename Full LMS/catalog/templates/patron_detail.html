@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}">Staff Dashboard</a></li>
+            <li class="breadcrumb-item active">{{ patron.username }}'s Account</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Patron Profile Sidebar -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center p-4 mb-4">
+                <div class="display-1 text-primary mb-3">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <h3 class="text-truncate px-2">{{ patron.username }}</h3>
+                <p class="text-muted small">{{ patron.email }}</p>
+
+                <hr>
+
+                <div class="mb-3">
+                    <h6 class="text-muted small">Outstanding Balance</h6>
+                    {% if total_fines > 0 %}
+                    <h2 class="text-danger fw-bold">${{ total_fines|stringformat:".2f" }}</h2>
+                    <div class="alert alert-danger py-1 small">Account Restricted</div>
+                    {% else %}
+                    <h2 class="text-success fw-bold">$0.00</h2>
+                    <span class="badge bg-success">Account Clear</span>
+                    {% endif %}
+                </div>
+
+                <a href="mailto:{{ patron.email }}" class="btn btn-primary w-100 mb-2">
+                    <i class="bi bi-envelope"></i>
+                    {% if total_fines > 0 %}
+                    Send Overdue Notice
+                    {% else %}
+                    Send Email
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-8">
+
+            <!-- RESERVATIONS SECTION -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-info text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-bookmark-star-fill me-2"></i>Active Reservations</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Book Title</th>
+                                <th>Date Reserved</th>
+                                <th class="text-end pe-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for res in patron.reservation_set.all %}
+                            <tr>
+                                <td class="ps-3 fw-bold">{{ res.book.title }}</td>
+                                <td>{{ res.reserved_at|date:"M d, Y" }}</td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group">
+                                        <a href="{% url 'convert_reservation_to_loan' res.id %}"
+                                            class="btn btn-sm btn-success">
+                                            Issue Loan
+                                        </a>
+                                        <a href="{% url 'remove_reservation' res.id %}"
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Cancel this reservation?')">
+                                            Cancel
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No active reservations found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TRANSACTION HISTORY SECTION -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Recent Transactions</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Book Title</th>
+                                    <th>Due Date</th>
+                                    <th class="text-end pe-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for loan in transactions %}
+                                <tr class="{% if loan.is_overdue and not loan.returned_date %}table-danger{% endif %}">
+                                    <td class="ps-3">{{ loan.book.title }}</td>
+                                    <td>{{ loan.due_date|date:"M d, Y" }}</td>
+                                    <td class="text-end pe-3">
+                                        {% if loan.returned_date %}
+                                        <span class="badge bg-success">Returned</span>
+                                        {% elif loan.is_overdue %}
+                                        <span class="badge bg-danger">OVERDUE</span>
+                                        <!-- Raw code removed; total balance on the left already reflects this fine -->
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">Active Loan</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-5">No transaction history found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End Col-md-8 -->
+    </div> <!-- End Row -->
+</div>
+{% endblock %}

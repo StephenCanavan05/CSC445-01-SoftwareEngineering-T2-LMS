@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Include Select2 CSS (Required for searchable dropdowns) -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+<!-- Staff Header -->
+<div class="alert alert-danger d-flex justify-content-between align-items-center mb-4 mt-4 shadow-sm">
+    <h4 class="mb-0"><i class="bi bi-shield-lock-fill me-2"></i>Staff Management Portal</h4>
+    <span class="badge bg-danger">Authorized Personnel Only</span>
+</div>
+
+<div class="row mb-5">
+    <!-- LEFT COLUMN: ACTIVE LOANS -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-list-check me-2"></i>Active Loans</span>
+                <form method="GET" action="" class="d-flex w-50">
+                    <input type="text" name="loan_q" class="form-control form-control-sm me-2"
+                        placeholder="Find by title or patron..." value="{{ request.GET.loan_q }}">
+                    <button type="submit" class="btn btn-sm btn-outline-light">Search</button>
+                </form>
+            </div>
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Book</th>
+                            <th>Patron</th>
+                            <th>Due Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in active_loans %}
+                        <tr>
+                            <td><strong>{{ loan.book.title }}</strong></td>
+                            <td>{{ loan.patron.username }}</td>
+                            <td>
+                                <span
+                                    class="badge {% if loan.is_overdue %}bg-danger{% else %}bg-light text-dark border{% endif %}">
+                                    {{ loan.due_date|date:"Y-m-d" }}
+                                    {% if loan.is_overdue %} (OVERDUE) {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'return_book' loan.id %}" class="btn btn-sm btn-outline-danger">Return
+                                    Book</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-5">No active loans found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: SEARCHABLE QUICK CHECKOUT -->
+    <div id="quick-checkout" class="col-md-4">
+        <div class="card p-3 shadow-sm border-0 bg-white h-100">
+            <h5 class="text-primary border-bottom pb-2"><i class="bi bi-lightning-fill"></i> Quick Checkout</h5>
+            <p class="small text-muted">Use this for books already in stock.</p>
+
+            <form method="POST" action="{% url 'checkout_book_no_id' %}">
+                {% csrf_token %}
+
+                <!-- Searchable Book Selection -->
+                <div class="mb-3">
+                    <label class="small fw-bold">Select Local Book</label>
+                    <select name="book_id" class="searchable-select form-select" required>
+                        <option value="">-- Search Book Title --</option>
+                        {% for book in local_books_all %}
+                        {% if book.available_copies > 0 %}
+                        <option value="{{ book.id }}">{{ book.title }} ({{ book.available_copies }} available)</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Searchable Patron Selection -->
+                <div class="mb-3">
+                    <label class="small fw-bold">Select Patron</label>
+                    <select name="patron_id" class="searchable-select form-select" required>
+                        <option value="">-- Search Patron Name --</option>
+                        {% for patron in all_patrons %}
+                        <option value="{{ patron.id }}">{{ patron.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="small fw-bold">Due Date</label>
+                    <input type="date" name="due_date" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Issue Loan</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS FOR SEARCHABLE DROPDOWNS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.searchable-select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: "-- Type to search --",
+            allowClear: true
+        });
+    });
+</script>
+
+<style>
+    .select2-container--bootstrap-5 .select2-selection {
+        border-radius: 0.375rem;
+        min-height: 38px;
+        border: 1px solid #ced4da;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 0.75rem;
+    }
+</style>
+{% endblock %}

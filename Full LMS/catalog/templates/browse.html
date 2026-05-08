@@ -1,0 +1,92 @@
+<!-- browse.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <form method="GET" action="{% url 'browse_books' %}" class="mb-5">
+        <div class="input-group input-group-lg shadow-sm">
+            <input type="text" name="q" class="form-control" placeholder="Search by title, author or ISBN..."
+                value="{{ query }}">
+            <button class="btn btn-primary px-4">Search Catalog</button>
+        </div>
+    </form>
+
+    {% if query %}
+    <!-- LOCAL RESULTS -->
+    <h3>Local Inventory</h3>
+    <div class="row mb-4">
+        {% for book in local_books %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ book.title }}</h5>
+                    <p class="text-muted small">By {{ book.author }}</p>
+
+                    <p class="badge {% if book.available_copies > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                        Available: {{ book.available_copies }} / {{ book.total_copies }}
+                    </p>
+
+                    <div class="mt-2">
+                        {% if not user.is_staff %}
+                        {% if book.id in reserved_book_ids %}
+                        <button class="btn btn-sm btn-secondary disabled" disabled>Already Reserved</button>
+                        <a href="{% url 'patron_dashboard' %}"
+                            class="btn btn-sm btn-link text-decoration-none">Manage/Remove</a>
+                        {% elif book.available_copies > 0 %}
+                        <a href="{% url 'add_to_reservation' book.id %}" class="btn btn-sm btn-outline-info">Reserve
+                            Copy</a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-danger disabled" disabled>Out of Stock</button>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted small italic">Staff: Manage via Patron Profile</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <hr>
+
+    <!-- GLOBAL RESULTS -->
+    <h3>Global Results</h3>
+    <div class="row">
+        {% for api_book in api_books %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                {% if api_book.thumbnail %}
+                <img src="{{ api_book.thumbnail }}" class="card-img-top p-3"
+                    style="height: 200px; object-fit: contain;">
+                {% endif %}
+                <div class="card-body text-center">
+                    <h6 class="fw-bold">{{ api_book.title }}</h6>
+                    <p class="small text-muted">{{ api_book.authors }}</p>
+
+                    {% if user.is_staff %}
+                    <form method="POST" action="{% url 'add_to_inventory' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="title" value="{{ api_book.title }}">
+                        <input type="hidden" name="author" value="{{ api_book.authors }}">
+                        <input type="hidden" name="isbn" value="{{ api_book.isbn }}">
+                        <input type="hidden" name="q" value="{{ query }}">
+
+                        <button type="submit" class="btn btn-sm btn-success w-100">Add to Inventory</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- DEBUG MESSAGE: This appears if api_books is an empty list -->
+        <div class="col-12 text-center py-4">
+            <div class="alert alert-warning d-inline-block shadow-sm">
+                <i class="bi bi-search me-2"></i>
+                <strong>DEBUG:</strong> No results were returned from the Global API.
+                {% if messages %}(TRY AGAIN LATER){% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
